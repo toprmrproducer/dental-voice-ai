@@ -2,25 +2,52 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "@/lib/auth";
+import { signIn, signUp } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const toggleMode = () => {
+    setMode(mode === "signin" ? "signup" : "signin");
+    setError("");
+    setSuccess("");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
 
     try {
-      await signIn(email, password);
-      router.push("/dashboard");
+      if (mode === "signup") {
+        if (password !== confirmPassword) {
+          setError("Passwords do not match");
+          setLoading(false);
+          return;
+        }
+        if (password.length < 6) {
+          setError("Password must be at least 6 characters");
+          setLoading(false);
+          return;
+        }
+        await signUp(email, password, { full_name: fullName, role: "owner" });
+        setSuccess("Account created! Check your email to confirm, then sign in.");
+        setMode("signin");
+      } else {
+        await signIn(email, password);
+        router.push("/dashboard");
+      }
     } catch (err: any) {
-      setError(err.message || "Invalid credentials");
+      setError(err.message || (mode === "signin" ? "Invalid credentials" : "Sign up failed"));
     } finally {
       setLoading(false);
     }
@@ -37,10 +64,29 @@ export default function LoginPage() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-slate-800">Dental Voice AI</h1>
-            <p className="text-slate-500 mt-1">Sign in to your clinic dashboard</p>
+            <p className="text-slate-500 mt-1">
+              {mode === "signin" ? "Sign in to your clinic dashboard" : "Create your clinic account"}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {mode === "signup" && (
+              <div>
+                <label htmlFor="fullName" className="block text-sm font-medium text-slate-700 mb-1">
+                  Full Name
+                </label>
+                <input
+                  id="fullName"
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-dental-500 focus:border-transparent outline-none transition"
+                  placeholder="Dr. Jane Smith"
+                />
+              </div>
+            )}
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
                 Email
@@ -71,9 +117,32 @@ export default function LoginPage() {
               />
             </div>
 
+            {mode === "signup" && (
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 mb-1">
+                  Confirm Password
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:ring-2 focus:ring-dental-500 focus:border-transparent outline-none transition"
+                  placeholder="••••••••"
+                />
+              </div>
+            )}
+
             {error && (
               <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg border border-red-100">
                 {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="p-3 bg-green-50 text-green-700 text-sm rounded-lg border border-green-100">
+                {success}
               </div>
             )}
 
@@ -82,9 +151,27 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-2.5 px-4 bg-dental-600 hover:bg-dental-700 text-white font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Signing in..." : "Sign In"}
+              {loading
+                ? mode === "signin"
+                  ? "Signing in..."
+                  : "Creating account..."
+                : mode === "signin"
+                ? "Sign In"
+                : "Create Account"}
             </button>
           </form>
+
+          <div className="mt-6 text-center">
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="text-sm text-dental-600 hover:text-dental-700 font-medium transition"
+            >
+              {mode === "signin"
+                ? "Don't have an account? Sign up"
+                : "Already have an account? Sign in"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

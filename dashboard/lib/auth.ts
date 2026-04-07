@@ -18,6 +18,28 @@ export async function signIn(email: string, password: string) {
   return data;
 }
 
+export async function signUp(
+  email: string,
+  password: string,
+  metadata: { clinic_id?: string; role?: string; full_name?: string } = {}
+) {
+  const supabase = createSupabaseClient();
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        clinic_id: metadata.clinic_id || "",
+        role: metadata.role || "owner",
+        full_name: metadata.full_name || "",
+      },
+    },
+  });
+
+  if (error) throw error;
+  return data;
+}
+
 export async function signOut() {
   const supabase = createSupabaseClient();
   await supabase.auth.signOut();
