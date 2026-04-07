@@ -1,14 +1,38 @@
+import { createClient } from "@/lib/supabase/client";
+import type {
+  DashboardToday,
+  PaginatedCalls,
+  CallFilters,
+  MetricsResponse,
+  AgentConfig,
+  Clinic,
+  Assistant,
+  PhoneNumber,
+} from "@/lib/types";
+
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string>;
+  noAuth?: boolean;
+}
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    return { Authorization: `Bearer ${session.access_token}` };
+  }
+  return {};
 }
 
 async function apiFetch<T = any>(
   path: string,
   options: FetchOptions = {}
 ): Promise<T> {
-  const { params, ...fetchOptions } = options;
+  const { params, noAuth, ...fetchOptions } = options;
 
   let url = `${BACKEND_URL}${path}`;
   if (params) {
@@ -16,10 +40,13 @@ async function apiFetch<T = any>(
     url += `?${searchParams.toString()}`;
   }
 
+  const authHeaders = noAuth ? {} : await getAuthHeaders();
+
   const res = await fetch(url, {
     ...fetchOptions,
     headers: {
       "Content-Type": "application/json",
+      ...authHeaders,
       ...fetchOptions.headers,
     },
   });
@@ -133,5 +160,105 @@ export async function updateAgentConfig(clinicId: string, data: any) {
 export async function getRecordingUrl(callId: string, clinicId: string) {
   return apiFetch(`/api/calls/${callId}/recording`, {
     params: { clinic_id: clinicId },
+  });
+}
+
+// ============================================================
+// Authenticated API — uses JWT, auto-resolves clinic from token
+// ============================================================
+
+// --- Authenticated Dashboard ---
+
+export async function getMyDashboardToday(): Promise<DashboardToday> {
+  return apiFetch<DashboardToday>("/api/me/dashboard/today");
+}
+
+export async function getMyDashboardMetrics(days = 30): Promise<MetricsResponse> {
+  return apiFetch<MetricsResponse>("/api/me/dashboard/metrics", {
+    params: { days: String(days) },
+  });
+}
+
+export async function getMyDashboardCalls(
+  page = 1,
+  limit = 20,
+  filters?: CallFilters
+): Promise<PaginatedCalls> {
+  const params: Record<string, string> = {
+    page: String(page),
+    limit: String(limit),
+  };
+  if (filters?.call_type) params.call_type = filters.call_type;
+  if (filters?.outcome) params.outcome = filters.outcome;
+  if (filters?.date_from) params.date_from = filters.date_from;
+  if (filters?.date_to) params.date_to = filters.date_to;
+  return apiFetch<PaginatedCalls>("/api/me/dashboard/calls", { params });
+}
+
+export async function getMyDashboardRecall() {
+  return apiFetch("/api/me/dashboard/recall");
+}
+
+// --- Clinic ---
+
+export async function getMyClinic(): Promise<Clinic> {
+  return apiFetch<Clinic>("/api/clinics");
+}
+
+export async function updateMyClinic(data: Partial<Clinic>): Promise<Clinic> {
+  return apiFetch<Clinic>("/api/clinics", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+// --- Assistants ---
+
+export async function getMyAssistants(): Promise<{ assistants: Assistant[] }> {
+  return apiFetch("/api/assistants");
+}
+
+export async function createAssistant(data: Partial<Assistant>): Promise<Assistant> {
+  return apiFetch<Assistant>("/api/assistants", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateAssistant(id: string, data: Partial<Assistant>): Promise<Assistant> {
+  return apiFetch<Assistant>(`/api/assistants/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteAssistant(id: string): Promise<void> {
+  return apiFetch(`/api/assistants/${id}`, { method: "DELETE" });
+}
+
+// --- Phone Numbers ---
+
+export async function getMyPhoneNumbers(): Promise<{ phone_numbers: PhoneNumber[] }> {
+  return apiFetch("/api/phone-numbers");
+}
+
+export async function createPhoneNumber(data: { phone_number: string; label?: string; provider?: string }): Promise<PhoneNumber> {
+  return apiFetch<PhoneNumber>("/api/phone-numbers", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deletePhoneNumber(id: string): Promise<void> {
+  return apiFetch(`/api/phone-numbers/${id}`, { method: "DELETE" });
+}
+
+// --- Demo Requests (public, no auth) ---
+
+export async function submitDemoRequest(data: { name: string; email: string; clinic_name: string }) {
+  return apiFetch("/api/demo-requests", {
+    method: "POST",
+    body: JSON.stringify(data),
+    noAuth: true,
   });
 }

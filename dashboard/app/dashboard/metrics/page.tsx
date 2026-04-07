@@ -1,22 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getUser, getClinicId } from "@/lib/auth";
-import { getDashboardMetrics } from "@/lib/api";
+import { getMyDashboardMetrics } from "@/lib/api";
+import type { MetricDay } from "@/lib/types";
 import MetricsChart from "@/components/MetricsChart";
 import KPICard from "@/components/KPICard";
 import { Clock, TrendingUp, RefreshCcw, Phone } from "lucide-react";
 
 export default function MetricsPage() {
-  const [metrics, setMetrics] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<MetricDay[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const user = await getUser();
-      if (!user) return;
-      const cid = getClinicId(user);
-      const data = await getDashboardMetrics(cid, 30).catch(() => ({ metrics: [] }));
+      const data = await getMyDashboardMetrics(30).catch(() => ({ metrics: [] as MetricDay[], days: 30 }));
       setMetrics(data.metrics || []);
       setLoading(false);
     }

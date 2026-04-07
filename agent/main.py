@@ -23,6 +23,7 @@ from livekit.agents import (
 from livekit.agents.pipeline import VoicePipelineAgent
 from livekit.plugins import groq, silero
 
+from agent.sarvam_plugin import SarvamSTT, SarvamTTS
 from agent.tools import DentalTools
 from agent.call_handler import (
     load_clinic_config,
@@ -105,11 +106,27 @@ async def entrypoint(ctx: JobContext):
     )
 
     # --- Build Voice Pipeline Agent ---
+    # Use Sarvam STT+TTS if SARVAM_API_KEY is set, otherwise fall back to Groq
+    use_sarvam = bool(os.getenv("SARVAM_API_KEY"))
+    sarvam_lang = os.getenv("SARVAM_LANGUAGE_CODE", "hi-IN")
+
+    if use_sarvam:
+        logger.info(f"Using Sarvam STT (saaras:v3) + TTS (bulbul:v3), language={sarvam_lang}")
+        stt_instance = SarvamSTT(language_code=sarvam_lang)
+        tts_instance = SarvamTTS(
+            voice=os.getenv("SARVAM_VOICE", "meera"),
+            language_code=sarvam_lang,
+        )
+    else:
+        logger.info("Using Groq STT + TTS (no SARVAM_API_KEY set)")
+        stt_instance = groq.STT(model="whisper-large-v3-turbo")
+        tts_instance = groq.TTS(voice=config.get("voice_id", "Cheyenne-PlayAI"))
+
     agent = VoicePipelineAgent(
         vad=ctx.proc.userdata["vad"],
-        stt=groq.STT(model="whisper-large-v3-turbo"),
+        stt=stt_instance,
         llm=groq.LLM(model="llama-3.3-70b-versatile"),
-        tts=groq.TTS(voice=config.get("voice_id", "Cheyenne-PlayAI")),
+        tts=tts_instance,
         chat_ctx=chat_ctx,
         fnc_ctx=tools,
         allow_interruptions=True,

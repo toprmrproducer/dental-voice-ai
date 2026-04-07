@@ -1,25 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getUser, getClinicId } from "@/lib/auth";
-import { getRecallCampaigns, triggerRecallBuild } from "@/lib/api";
+import { getMyDashboardRecall, triggerRecallBuild } from "@/lib/api";
+import type { RecallCampaign } from "@/lib/types";
 import RecallTable from "@/components/RecallTable";
 import { RefreshCcw, Loader2 } from "lucide-react";
 
 export default function RecallPage() {
-  const [clinicId, setClinicId] = useState("");
-  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [campaigns, setCampaigns] = useState<RecallCampaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
   const [triggerResult, setTriggerResult] = useState("");
 
   useEffect(() => {
     async function init() {
-      const user = await getUser();
-      if (!user) return;
-      const cid = getClinicId(user);
-      setClinicId(cid);
-      const data = await getRecallCampaigns(cid).catch(() => ({ campaigns: [] }));
+      const data = await getMyDashboardRecall().catch(() => ({ campaigns: [] }));
       setCampaigns(data.campaigns || []);
       setLoading(false);
     }
@@ -33,7 +28,7 @@ export default function RecallPage() {
       const result = await triggerRecallBuild();
       setTriggerResult(result.message || `${result.queued} patients queued`);
       // Refresh list
-      const data = await getRecallCampaigns(clinicId).catch(() => ({ campaigns: [] }));
+      const data = await getMyDashboardRecall().catch(() => ({ campaigns: [] }));
       setCampaigns(data.campaigns || []);
     } catch (err: any) {
       setTriggerResult(`Error: ${err.message}`);
@@ -79,7 +74,7 @@ export default function RecallPage() {
         </div>
       )}
 
-      <RecallTable campaigns={campaigns} />
+      <RecallTable campaigns={campaigns as any} />
     </div>
   );
 }

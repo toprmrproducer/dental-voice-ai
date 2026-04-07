@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { getUser, getClinicId } from "@/lib/auth";
-import { getDashboardCalls } from "@/lib/api";
+import { getMyDashboardCalls } from "@/lib/api";
+import type { PaginatedCalls, CallFilters } from "@/lib/types";
 import TranscriptModal from "@/components/TranscriptModal";
 import { Search, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 
 export default function CallHistoryPage() {
-  const [clinicId, setClinicId] = useState("");
-  const [data, setData] = useState<any>({ calls: [], total: 0, page: 1, limit: 20 });
+  const [data, setData] = useState<PaginatedCalls>({ calls: [], total: 0, page: 1, limit: 20 });
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<CallFilters>({
     call_type: "",
     outcome: "",
     date_from: "",
@@ -18,27 +18,28 @@ export default function CallHistoryPage() {
   });
   const [selectedTranscript, setSelectedTranscript] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     async function init() {
       const user = await getUser();
       if (!user) return;
-      setClinicId(getClinicId(user));
+      setReady(true);
     }
     init();
   }, []);
 
   useEffect(() => {
-    if (!clinicId) return;
+    if (!ready) return;
     setLoading(true);
     const activeFilters = Object.fromEntries(
       Object.entries(filters).filter(([_, v]) => v !== "")
-    );
-    getDashboardCalls(clinicId, page, 20, activeFilters)
+    ) as CallFilters;
+    getMyDashboardCalls(page, 20, activeFilters)
       .then(setData)
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [clinicId, page, filters]);
+  }, [ready, page, filters]);
 
   const totalPages = Math.ceil((data.total || 0) / 20);
 

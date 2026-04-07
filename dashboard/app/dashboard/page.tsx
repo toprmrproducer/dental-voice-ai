@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { getUser, getClinicId } from "@/lib/auth";
-import { getDashboardToday, getAgentConfig } from "@/lib/api";
+import { getMyDashboardToday, getAgentConfig, getMyAssistants, getMyClinic } from "@/lib/api";
+import type { DashboardToday, AgentConfig } from "@/lib/types";
 import KPICard from "@/components/KPICard";
 import CallFeed from "@/components/CallFeed";
 import { Phone, CalendarCheck, Bell, RefreshCcw, Activity } from "lucide-react";
 
 export default function DashboardPage() {
-  const [data, setData] = useState<any>(null);
-  const [agentConfig, setAgentConfig] = useState<any>(null);
+  const [data, setData] = useState<DashboardToday | null>(null);
+  const [agentConfig, setAgentConfig] = useState<AgentConfig | null>(null);
   const [clinicId, setClinicId] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -21,7 +22,7 @@ export default function DashboardPage() {
       setClinicId(cid);
 
       const [dashData, agentData] = await Promise.all([
-        getDashboardToday(cid).catch(() => null),
+        getMyDashboardToday().catch(() => null),
         getAgentConfig(cid).catch(() => null),
       ]);
       setData(dashData);
@@ -35,7 +36,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!clinicId) return;
     const interval = setInterval(async () => {
-      const dashData = await getDashboardToday(clinicId).catch(() => null);
+      const dashData = await getMyDashboardToday().catch(() => null);
       if (dashData) setData(dashData);
     }, 10000);
     return () => clearInterval(interval);
@@ -111,7 +112,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <h2 className="text-lg font-semibold text-slate-800 mb-3">Live Call Feed</h2>
-          <CallFeed calls={data?.recent_calls || []} />
+          <CallFeed calls={data?.recent_calls as any || []} />
         </div>
 
         <div>

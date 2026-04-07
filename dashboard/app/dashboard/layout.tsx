@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { getUser, signOut, getClinicId, getUserRole } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/client";
+import { getClinicId, getUserRole } from "@/lib/auth";
 import {
   LayoutDashboard,
   Phone,
@@ -28,9 +29,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const supabase = createClient();
 
   useEffect(() => {
-    getUser().then((u) => {
+    supabase.auth.getUser().then(({ data: { user: u } }) => {
       if (!u) {
         router.push("/login");
       } else {
@@ -38,12 +40,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
       setLoading(false);
     });
-  }, [router]);
+  }, [router, supabase.auth]);
 
   const handleSignOut = useCallback(async () => {
-    await signOut();
+    await supabase.auth.signOut();
     router.push("/login");
-  }, [router]);
+  }, [router, supabase.auth]);
 
   if (loading) {
     return (

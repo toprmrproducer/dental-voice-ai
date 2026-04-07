@@ -8,7 +8,10 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.routes import patients, appointments, calls, sms, dashboard, recall, webhooks
+from backend.routes import (
+    patients, appointments, calls, sms, dashboard, recall, webhooks,
+    clinics, assistants, phone_numbers, demo, metrics, livekit_webhooks,
+)
 from backend.services.scheduler import start_scheduler, scheduler
 
 logging.basicConfig(
@@ -53,6 +56,12 @@ app.include_router(sms.router)
 app.include_router(dashboard.router)
 app.include_router(recall.router)
 app.include_router(webhooks.router)
+app.include_router(clinics.router)
+app.include_router(assistants.router)
+app.include_router(phone_numbers.router)
+app.include_router(demo.router)
+app.include_router(metrics.router)
+app.include_router(livekit_webhooks.router)
 
 
 @app.get("/health")

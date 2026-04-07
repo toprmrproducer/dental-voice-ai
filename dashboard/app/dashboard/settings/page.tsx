@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { getUser, getClinicId } from "@/lib/auth";
 import { getAgentConfig, updateAgentConfig } from "@/lib/api";
 import FAQEditor from "@/components/FAQEditor";
@@ -11,6 +11,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const [agentName, setAgentName] = useState("");
   const [voiceId, setVoiceId] = useState("");
@@ -40,7 +41,8 @@ export default function SettingsPage() {
     load();
   }, []);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
+    if (!clinicId) return;
     setSaving(true);
     setMessage("");
     try {
@@ -58,7 +60,22 @@ export default function SettingsPage() {
     } finally {
       setSaving(false);
     }
-  };
+  }, [clinicId, agentName, voiceId, emergencyNumber, businessHours, faqBank, providers]);
+
+  // Auto-save with 800ms debounce
+  const triggerAutoSave = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      handleSave();
+    }, 800);
+  }, [handleSave]);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const dayLabels: Record<string, string> = {
     mon: "Monday",

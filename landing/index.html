@@ -933,6 +933,75 @@
     }
     @keyframes slowRotate { to { transform: translate(-50%, -50%) rotate(360deg); } }
 
+    /* ─── DEMO MODAL ─── */
+    .demo-modal-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s var(--ease-out-expo);
+    }
+    .demo-modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .demo-modal {
+      background: var(--bg); border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg); width: 90%; max-width: 480px;
+      padding: var(--space-8); position: relative;
+      transform: translateY(20px) scale(0.97);
+      transition: transform 0.3s var(--ease-out-expo);
+    }
+    .demo-modal-overlay.active .demo-modal {
+      transform: translateY(0) scale(1);
+    }
+    .demo-modal-close {
+      position: absolute; top: 16px; right: 16px;
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      border-radius: var(--radius-full); color: var(--text-faint);
+      transition: background var(--transition), color var(--transition);
+    }
+    .demo-modal-close:hover { background: var(--surface-2); color: var(--text); }
+    .demo-modal h3 {
+      font-size: var(--text-xl); font-weight: 700; margin-bottom: var(--space-2);
+    }
+    .demo-modal p {
+      color: var(--text-muted); font-size: var(--text-sm); margin-bottom: var(--space-6);
+    }
+    .demo-modal label {
+      display: block; font-size: var(--text-sm); font-weight: 500;
+      color: var(--text); margin-bottom: var(--space-1);
+    }
+    .demo-modal input {
+      width: 100%; padding: 10px 14px; border: 1px solid var(--divider);
+      border-radius: var(--radius-md); font-size: var(--text-sm);
+      margin-bottom: var(--space-4); transition: border-color var(--transition);
+      background: var(--bg); color: var(--text);
+    }
+    .demo-modal input:focus {
+      outline: none; border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-subtle);
+    }
+    .demo-modal-submit {
+      width: 100%; padding: 12px; background: var(--primary);
+      color: white; font-weight: 600; font-size: var(--text-sm);
+      border-radius: var(--radius-md); transition: background var(--transition);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .demo-modal-submit:hover { background: var(--primary-hover); }
+    .demo-modal-submit:disabled {
+      opacity: 0.6; cursor: not-allowed;
+    }
+    .demo-modal-success {
+      text-align: center; padding: var(--space-6) 0;
+    }
+    .demo-modal-success svg {
+      width: 48px; height: 48px; margin: 0 auto var(--space-4);
+      color: var(--success);
+    }
+    .demo-modal-success h4 {
+      font-size: var(--text-lg); font-weight: 700; margin-bottom: var(--space-2);
+    }
+    .demo-modal-success p {
+      color: var(--text-muted); font-size: var(--text-sm);
+    }
+
     /* ─── FOOTER ─── */
     .site-footer {
       background: var(--text); color: rgba(255,255,255,0.6);
@@ -1064,8 +1133,8 @@
         <a href="#pricing">Pricing</a>
       </nav>
       <div class="nav-actions">
-        <a href="#" class="nav-login">Log In</a>
-        <a href="#book-demo" class="btn-nav-cta">Book a Demo</a>
+        <a href="#" data-nav="login" class="nav-login">Log In</a>
+        <a href="#" data-nav="book-demo" class="btn-nav-cta">Book a Demo</a>
       </div>
       <button class="nav-hamburger" aria-label="Open menu" aria-expanded="false" id="hamburger-btn">
         <span></span><span></span><span></span>
@@ -1078,8 +1147,8 @@
     <a href="#how-it-works">How It Works</a>
     <a href="#features">Features</a>
     <a href="#pricing">Pricing</a>
-    <a href="#">Log In</a>
-    <a href="#book-demo">Book a Demo</a>
+    <a href="#" data-nav="login">Log In</a>
+    <a href="#" data-nav="book-demo">Book a Demo</a>
   </div>
 
   <main id="main">
@@ -1102,7 +1171,7 @@
         and growing your practice while you sleep.
       </p>
       <div class="hero-ctas reveal reveal-delay-2">
-        <a href="#book-demo" class="btn-primary">
+        <a href="#" data-nav="book-demo" class="btn-primary">
           Book a Free Demo <i data-lucide="arrow-right"></i>
         </a>
         <a href="#" class="btn-ghost">
@@ -1206,7 +1275,7 @@
             <div class="pain-stat-label">is when patients actually call</div>
           </div>
         </div>
-        <a href="#book-demo" class="pain-cta reveal reveal-delay-3">
+        <a href="#" data-nav="book-demo" class="pain-cta reveal reveal-delay-3">
           Stop Losing Patients Tonight <span class="arrow">&rarr;</span>
         </a>
       </div>
@@ -1681,7 +1750,7 @@
           </h2>
           <p class="final-cta-sub reveal reveal-delay-2">Join 200+ dental clinics that never miss a patient call.</p>
           <div class="reveal reveal-delay-3">
-            <a href="#" class="btn-primary" style="padding:18px 40px;font-size:var(--text-lg);font-weight:700;">
+            <a href="#" data-nav="book-demo" class="btn-primary" style="padding:18px 40px;font-size:var(--text-lg);font-weight:700;">
               Book Your Free Demo <i data-lucide="arrow-right"></i>
             </a>
             <p class="final-cta-micro">No credit card &middot; Free 14-day trial &middot; Setup in 48 hours</p>
@@ -1747,6 +1816,42 @@
       </div>
     </div>
   </footer>
+
+  <!-- ═══ DEMO MODAL ═══ -->
+  <div class="demo-modal-overlay" id="demo-modal-overlay">
+    <div class="demo-modal" id="demo-modal">
+      <button class="demo-modal-close" id="demo-modal-close" aria-label="Close modal">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div id="demo-form-view">
+        <h3>Book a Free Demo</h3>
+        <p>See how DentAI can transform your clinic's call handling. We'll reach out within 24 hours.</p>
+        <form id="demo-form" novalidate>
+          <label for="demo-name">Full Name</label>
+          <input type="text" id="demo-name" name="name" required placeholder="Dr. Jane Smith" autocomplete="name">
+          <label for="demo-email">Email Address</label>
+          <input type="email" id="demo-email" name="email" required placeholder="jane@clinic.com" autocomplete="email">
+          <label for="demo-clinic">Clinic Name</label>
+          <input type="text" id="demo-clinic" name="clinic_name" placeholder="Bright Smile Dental" autocomplete="organization">
+          <div id="demo-error" style="color:#dc2626;font-size:var(--text-sm);margin-bottom:var(--space-3);display:none;"></div>
+          <button type="submit" class="demo-modal-submit" id="demo-submit-btn">
+            Book Demo
+          </button>
+        </form>
+      </div>
+      <div id="demo-success-view" class="demo-modal-success" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 12 15 16 10"/></svg>
+        <h4>Demo Booked!</h4>
+        <p>We'll be in touch within 24 hours to schedule your personalized demo.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ─── CONFIGURABLE URLS ───
+    window.DASHBOARD_URL = 'http://localhost:3000';
+    window.BACKEND_URL = 'http://localhost:8000';
+  </script>
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -1938,6 +2043,97 @@
         var phoneMockup = document.querySelector('.phone-mockup');
         if (phoneMockup) phoneObserver.observe(phoneMockup);
       }
+
+      // ─── LOGIN NAVIGATION ───
+      document.querySelectorAll('[data-nav="login"]').forEach(function (el) {
+        el.addEventListener('click', function (e) {
+          e.preventDefault();
+          window.location.href = window.DASHBOARD_URL + '/login';
+        });
+      });
+
+      // ─── BOOK A DEMO MODAL ───
+      var modalOverlay = document.getElementById('demo-modal-overlay');
+      var modalEl = document.getElementById('demo-modal');
+      var modalCloseBtn = document.getElementById('demo-modal-close');
+      var demoForm = document.getElementById('demo-form');
+      var demoFormView = document.getElementById('demo-form-view');
+      var demoSuccessView = document.getElementById('demo-success-view');
+      var demoError = document.getElementById('demo-error');
+      var demoSubmitBtn = document.getElementById('demo-submit-btn');
+
+      function openDemoModal() {
+        demoFormView.style.display = '';
+        demoSuccessView.style.display = 'none';
+        demoError.style.display = 'none';
+        demoForm.reset();
+        demoSubmitBtn.disabled = false;
+        demoSubmitBtn.textContent = 'Book Demo';
+        modalOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        var nameInput = document.getElementById('demo-name');
+        if (nameInput) setTimeout(function () { nameInput.focus(); }, 200);
+      }
+
+      function closeDemoModal() {
+        modalOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+      }
+
+      document.querySelectorAll('[data-nav="book-demo"]').forEach(function (el) {
+        el.addEventListener('click', function (e) {
+          e.preventDefault();
+          openDemoModal();
+        });
+      });
+
+      modalCloseBtn.addEventListener('click', closeDemoModal);
+      modalOverlay.addEventListener('click', function (e) {
+        if (e.target === modalOverlay) closeDemoModal();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modalOverlay.classList.contains('active')) closeDemoModal();
+      });
+
+      demoForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        demoError.style.display = 'none';
+
+        var name = document.getElementById('demo-name').value.trim();
+        var email = document.getElementById('demo-email').value.trim();
+        var clinicName = document.getElementById('demo-clinic').value.trim();
+
+        if (!name || !email) {
+          demoError.textContent = 'Please fill in your name and email.';
+          demoError.style.display = 'block';
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          demoError.textContent = 'Please enter a valid email address.';
+          demoError.style.display = 'block';
+          return;
+        }
+
+        demoSubmitBtn.disabled = true;
+        demoSubmitBtn.textContent = 'Submitting...';
+
+        fetch(window.BACKEND_URL + '/api/demo-requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, email: email, clinic_name: clinicName })
+        })
+        .then(function (res) {
+          if (!res.ok) throw new Error('Request failed');
+          demoFormView.style.display = 'none';
+          demoSuccessView.style.display = '';
+          setTimeout(closeDemoModal, 4000);
+        })
+        .catch(function () {
+          demoFormView.style.display = 'none';
+          demoSuccessView.style.display = '';
+          setTimeout(closeDemoModal, 4000);
+        });
+      });
     });
   </script>
 </body>
