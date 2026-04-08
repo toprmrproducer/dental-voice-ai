@@ -4,19 +4,228 @@ Complete step-by-step instructions to deploy the entire application to a VPS usi
 
 ---
 
-## Prerequisites
+## Deployment Methods
 
-- **VPS**: Ubuntu 22.04+, 2 vCPU, 4GB RAM (DigitalOcean, Hetzner, Linode, AWS, etc.)
-- **Domain name** (e.g., `yourdomain.com`)
-- **API Keys** (Supabase, Groq, LiveKit, Twilio, Sarvam — see `all_api_keys.env`)
+Choose the method that matches your VPS control panel:
+
+1. **[GUI Method](#gui-method)** ← Use this if your VPS has a **web-based control panel** (cPanel, Plesk, Webmin, DigitalOcean, Hetzner, etc.)
+2. **[SSH Method](#ssh-method)** ← Use this if you prefer **terminal commands**
 
 ---
 
-## Step-by-Step Deployment
+## GUI Method
 
-### **1. Get a VPS & Note the IP**
+For VPS panels with web interfaces (cPanel, Plesk, Hetzner Cloud, DigitalOcean, etc.):
 
-Buy a VPS from any provider. You'll get an IP like `123.45.67.89`.
+### **Step 1: Log into Your VPS Control Panel**
+
+Go to your VPS provider's web interface and log in.
+
+### **Step 2: Open Web Terminal**
+
+Most panels have a "Terminal," "Console," "Shell," or "Command Line" option. Click it.
+
+### **Step 3: Set Up DNS**
+
+In your **domain registrar** (GoDaddy, Namecheap, Route53, etc.):
+
+| Subdomain | Target | TTL |
+|-----------|--------|-----|
+| `yourdomain.com` | `YOUR.VPS.IP.ADDRESS` | 3600 |
+| `api.yourdomain.com` | `YOUR.VPS.IP.ADDRESS` | 3600 |
+| `app.yourdomain.com` | `YOUR.VPS.IP.ADDRESS` | 3600 |
+
+**Save and wait 5-30 minutes for DNS to propagate.**
+
+### **Step 4: Install Docker & Docker Compose**
+
+In the web terminal, run:
+
+```bash
+curl -fsSL https://get.docker.com | sh
+curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+docker --version
+docker-compose --version
+```
+
+### **Step 5: Clone Repository**
+
+```bash
+cd /root
+git clone https://github.com/toprmrproducer/dental-voice-ai.git
+cd dental-voice-ai
+```
+
+### **Step 6: Create `.env` Files**
+
+**For backend/.env:**
+```bash
+cat > backend/.env << 'EOF'
+SUPABASE_URL=https://pghipeagcnoqpdhfajrw.supabase.co
+SUPABASE_SERVICE_KEY=YOUR_SUPABASE_SERVICE_KEY
+GROQ_API_KEY=YOUR_GROQ_API_KEY
+LIVEKIT_URL=YOUR_LIVEKIT_URL
+LIVEKIT_API_KEY=YOUR_LIVEKIT_API_KEY
+LIVEKIT_API_SECRET=YOUR_LIVEKIT_API_SECRET
+TWILIO_ACCOUNT_SID=YOUR_TWILIO_SID
+TWILIO_AUTH_TOKEN=YOUR_TWILIO_AUTH_TOKEN
+TWILIO_PHONE_NUMBER=YOUR_TWILIO_PHONE_NUMBER
+TWILIO_SIP_DOMAIN=YOUR_TWILIO_SIP_DOMAIN
+EOF
+```
+
+**For agent/.env:**
+```bash
+cat > agent/.env << 'EOF'
+GROQ_API_KEY=YOUR_GROQ_API_KEY
+LIVEKIT_URL=YOUR_LIVEKIT_URL
+LIVEKIT_API_KEY=YOUR_LIVEKIT_API_KEY
+LIVEKIT_API_SECRET=YOUR_LIVEKIT_API_SECRET
+SARVAM_API_KEY=
+SARVAM_LANGUAGE_CODE=hi-IN
+SARVAM_VOICE=meera
+EOF
+```
+
+**For dashboard/.env.local:**
+```bash
+cat > dashboard/.env.local << 'EOF'
+NEXT_PUBLIC_SUPABASE_URL=https://pghipeagcnoqpdhfajrw.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnaGlwZWFnY25vcXBkaGZhanJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1NTQ4NjcsImV4cCI6MjA5MTEzMDg2N30.W-A3cV-lSh9qZ7xiB6-i9rf1flSwgjAkYyaYgMLY2Zk
+EOF
+```
+
+### **Step 7: Get SSL Certificates**
+
+```bash
+apt-get update && apt-get install -y certbot
+
+certbot certonly --standalone \
+  -d yourdomain.com \
+  -d www.yourdomain.com \
+  -d api.yourdomain.com \
+  -d app.yourdomain.com \
+  --email your-email@example.com \
+  --agree-tos -n
+```
+
+### **Step 8: Create Nginx Config**
+
+```bash
+mkdir -p nginx
+
+cat > nginx/nginx.conf << 'EOF'
+events {
+    worker_connections 1024;
+}
+
+http {
+    server {
+        listen 80 default_server;
+        server_name _;
+        return 301 https://$host$request_uri;
+    }
+
+    server {
+        listen 443 ssl http2;
+        server_name api.yourdomain.com;
+
+        ssl_certificate /etc/letsencrypt/live/api.yourdomain.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/api.yourdomain.com/privkey.pem;
+
+        location / {
+            proxy_pass http://backend:8000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+
+    server {
+        listen 443 ssl http2;
+        server_name app.yourdomain.com;
+
+        ssl_certificate /etc/letsencrypt/live/app.yourdomain.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/app.yourdomain.com/privkey.pem;
+
+        location / {
+            proxy_pass http://dashboard:3000;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+
+    server {
+        listen 443 ssl http2;
+        server_name yourdomain.com www.yourdomain.com;
+
+        ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+
+        location / {
+            proxy_pass http://landing:80;
+            proxy_set_header Host $host;
+        }
+    }
+}
+EOF
+```
+
+### **Step 9: Update docker-compose.yml**
+
+Add Nginx service (run this in the web terminal):
+
+```bash
+cat >> docker-compose.yml << 'EOF'
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+      - dashboard
+      - landing
+    restart: unless-stopped
+EOF
+```
+
+### **Step 10: Start All Containers**
+
+```bash
+docker-compose up -d --build
+```
+
+### **Step 11: Verify**
+
+```bash
+docker-compose ps
+curl https://api.yourdomain.com/
+curl https://app.yourdomain.com/
+```
+
+### **Step 12: Auto-Renew SSL**
+
+```bash
+crontab -e
+```
+
+Add this line:
+```bash
+0 2 * * * certbot renew --quiet && docker-compose -f /root/dental-voice-ai/docker-compose.yml restart nginx
+```
+
+---
+
+## SSH Method
 
 ### **2. SSH into VPS**
 
