@@ -12,3 +12,4 @@ build/
 
 # Local Netlify folder
 .netlify
+all_api_keys.env
