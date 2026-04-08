@@ -5,51 +5,85 @@ services:
       dockerfile: Dockerfile
     expose:
       - "8000"
-    env_file:
-      - ./backend/.env
+    ports:
+      - "8000:8000"
     environment:
       - HOST=0.0.0.0
       - PORT=8000
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - LIVEKIT_URL=${LIVEKIT_URL}
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+      - TWILIO_SIP_DOMAIN=${TWILIO_SIP_DOMAIN}
+      - LIVEKIT_SIP_OUTBOUND_TRUNK_ID=${LIVEKIT_SIP_OUTBOUND_TRUNK_ID}
+      - BACKEND_URL=http://backend:8000
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
       start_period: 10s
     restart: unless-stopped
+    networks:
+      - dental-ai-network
 
   agent:
     build:
       context: ./agent
       dockerfile: Dockerfile
-    env_file:
-      - ./agent/.env
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - LIVEKIT_URL=${LIVEKIT_URL}
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - BACKEND_URL=http://backend:8000
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - SARVAM_API_KEY=${SARVAM_API_KEY}
+      - SARVAM_LANGUAGE_CODE=${SARVAM_LANGUAGE_CODE}
+      - SARVAM_VOICE=${SARVAM_VOICE}
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - dental-ai-network
 
   dashboard:
     build:
       context: ./dashboard
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     expose:
       - "3000"
-    env_file:
-      - ./dashboard/.env.local
+    ports:
+      - "3000:3000"
     environment:
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
       - BACKEND_INTERNAL_URL=http://backend:8000
       - HOSTNAME=0.0.0.0
       - PORT=3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - dental-ai-network
 
-  landing:
-    build:
-      context: ./landing
-      dockerfile: Dockerfile
-    expose:
-      - "80"
-    restart: unless-stopped
+networks:
+  dental-ai-network:
+    driver: bridge
