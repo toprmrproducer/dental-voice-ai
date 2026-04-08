@@ -20,7 +20,7 @@ from agent.prompts import (
 
 logger = logging.getLogger("call-handler")
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8000")
 
 
 async def load_clinic_config(clinic_id: str) -> dict:

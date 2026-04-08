@@ -12,7 +12,7 @@ from livekit.agents import llm
 
 logger = logging.getLogger("dental-tools")
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8000")
 
 
 class DentalTools(llm.FunctionContext):

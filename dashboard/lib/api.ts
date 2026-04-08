@@ -10,7 +10,8 @@ import type {
   PhoneNumber,
 } from "@/lib/types";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+// All /api/* calls are proxied to the FastAPI backend via next.config.mjs rewrites.
+// No backend URL env var needed.
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string>;
@@ -34,7 +35,7 @@ async function apiFetch<T = any>(
 ): Promise<T> {
   const { params, noAuth, ...fetchOptions } = options;
 
-  let url = `${BACKEND_URL}${path}`;
+  let url = path;
   if (params) {
     const searchParams = new URLSearchParams(params);
     url += `?${searchParams.toString()}`;

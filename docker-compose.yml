@@ -24,8 +24,6 @@ services:
       dockerfile: Dockerfile
     env_file:
       - ./agent/.env
-    environment:
-      - BACKEND_URL=http://backend:8000
     depends_on:
       backend:
         condition: service_healthy
@@ -40,7 +38,7 @@ services:
     env_file:
       - ./dashboard/.env.local
     environment:
-      - BACKEND_URL=http://backend:8000
+      - BACKEND_INTERNAL_URL=http://backend:8000
       - HOSTNAME=0.0.0.0
       - PORT=3000
     depends_on:
